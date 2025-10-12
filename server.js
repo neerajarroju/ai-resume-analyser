@@ -87,6 +87,16 @@ app.post('/api/generate', async (req, res) => {
               ]
             },
             {
+              "title": "PROJECTS",
+              "items": [
+                {
+                  "heading": "Project Name",
+                  "subheading": "Technologies Used",
+                  "description": "A single paragraph describing the project."
+                }
+              ]
+            },
+            {
               "title": "SKILLS",
               "items": ["Skill 1", "Skill 2", "Skill 3", "Skill 4", "Skill 5", "Skill 6"]
             }
@@ -109,7 +119,6 @@ app.post('/api/generate', async (req, res) => {
         const jsonResponse = await callGeminiApi(prompt, true);
         const resumeData = JSON.parse(jsonResponse);
 
-        // --- FIX START: This section is updated to generate structured HTML ---
         let resumeHtmlForWeb = `<h2>${resumeData.name}</h2><p><strong>${resumeData.title}</strong></p>`;
         resumeHtmlForWeb += `<h3>ABOUT ME</h3><p>${resumeData.summary}</p>`;
 
@@ -118,18 +127,16 @@ app.post('/api/generate', async (req, res) => {
             if (section.title.toUpperCase() === 'SKILLS') {
                 resumeHtmlForWeb += `<ul>${section.items.map(item => `<li>${item}</li>`).join('')}</ul>`;
             } else {
-                // Use separate <p> tags for better structure
                 section.items.forEach(item => {
                     resumeHtmlForWeb += `<p><strong>${item.heading}</strong></p>`;
-                    resumeHtmlForWeb += `<p><em>${item.subheading}</em></p>`;
-                    resumeHtmlForWeb += `<p>${item.description}</p>`;
+                    if (item.subheading) resumeHtmlForWeb += `<p><em>${item.subheading}</em></p>`;
+                    if (item.description) resumeHtmlForWeb += `<p>${item.description}</p>`;
                 });
             }
         });
-        // --- FIX END ---
 
         res.json({
-            resumeText: resumeHtmlForWeb, // This is now structured HTML
+            resumeText: resumeHtmlForWeb,
             resumeData,
             atsScore: resumeData.atsScore,
             suggestions: resumeData.suggestions
@@ -190,8 +197,6 @@ app.post('/api/download-docx', async (req, res) => {
     }
 });
 
-
-// FIX: This function has been completely rewritten for a more elegant and professional design.
 function buildDocxFromJSON(data) {
     const FONT_FAMILY = "Calibri";
 
@@ -202,7 +207,6 @@ function buildDocxFromJSON(data) {
     });
 
     return [
-        // --- HEADER SECTION ---
         new Paragraph({
             alignment: AlignmentType.CENTER,
             children: [new TextRun({ text: data.name || "Full Name", font: FONT_FAMILY, size: 56, bold: true })],
@@ -223,15 +227,11 @@ function buildDocxFromJSON(data) {
             ],
             spacing: { after: 300 },
         }),
-
-        // --- ABOUT ME SECTION ---
         createSectionHeading("ABOUT ME"),
         new Paragraph({
             children: [new TextRun({ text: data.summary || "", font: FONT_FAMILY, size: 22 })],
             spacing: { after: 300 },
         }),
-
-        // --- DYNAMIC SECTIONS (EDUCATION, EXPERIENCE, etc.) ---
         ...data.sections.flatMap(section => {
             const sectionChildren = [createSectionHeading(section.title)];
 
@@ -281,18 +281,11 @@ app.post('/api/improve', async (req, res) => {
 });
 
 // --- API Endpoint for Cover Letter Generation ---
-// ***** BUG FIX STARTS HERE *****
 app.post('/api/generate-cover-letter', async (req, res) => {
-    // Destructure resumeData instead of resumeText
     const { studentData, jobDescription, resumeData } = req.body; 
-    
-    // Validate required data, checking for resumeData
     if (!studentData || !jobDescription || !resumeData) {
         return res.status(400).json({ error: 'Missing required data.' });
     }
-
-    // --- REBUILD PLAIN TEXT RESUME FROM resumeData ---
-    // This logic is from the old working code. It ensures a clean, non-HTML resume is sent to the AI.
     let plainResumeText = `${resumeData.name.toUpperCase()}\n${resumeData.title}\n\n`;
     plainResumeText += `ABOUT ME\n${resumeData.summary}\n\n`;
     resumeData.sections.forEach(section => {
@@ -306,9 +299,6 @@ app.post('/api/generate-cover-letter', async (req, res) => {
         }
         plainResumeText += '\n';
     });
-    // --- END OF REBUILD LOGIC ---
-
-    // Use the newly created plainResumeText in the prompt
     const prompt = `Based on the student's info, their resume, and the job description, write a professional cover letter.\n\n**Student Info:**\n${studentData}\n\n**Resume:**\n${plainResumeText}\n\n**Job Description:**\n${jobDescription}`;
     
     try {
@@ -318,8 +308,6 @@ app.post('/api/generate-cover-letter', async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
-// ***** BUG FIX ENDS HERE *****
-
 
 // --- API Endpoint for Interview Prep Generation ---
 app.post('/api/generate-interview-prep', async (req, res) => {
@@ -334,31 +322,108 @@ app.post('/api/generate-interview-prep', async (req, res) => {
     }
 });
 
-// --- ✨ NEW: API Endpoint for Portfolio Website Generation ---
+// --- ✨ REVISED: API Endpoint for Portfolio Website Generation Using a Template ---
 app.post('/api/generate-portfolio', async (req, res) => {
     const { resumeData } = req.body;
     if (!resumeData) {
         return res.status(400).json({ error: 'Resume data is required to generate a portfolio.' });
     }
 
+    const portfolioTemplate = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{name}} - Portfolio</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Arial', sans-serif; line-height: 1.6; color: #333; background-color: #f4f4f4; }
+        a { text-decoration: none; color: inherit; }
+        ul { list-style: none; }
+        header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-align: center; padding: 2rem 1rem; }
+        header h1 { font-size: 2.5rem; margin-bottom: 0.5rem; }
+        header p { font-size: 1.2rem; opacity: 0.9; }
+        nav { background: #333; padding: 1rem; position: sticky; top: 0; z-index: 100; }
+        nav ul { display: flex; justify-content: center; flex-wrap: wrap; }
+        nav li { margin: 0 1rem; }
+        nav a { color: white; font-weight: bold; transition: color 0.3s; }
+        nav a:hover { color: #667eea; }
+        section { padding: 3rem 1rem; max-width: 1200px; margin: 0 auto; }
+        h2 { text-align: center; font-size: 2rem; margin-bottom: 2rem; color: #333; }
+        #about { background: white; text-align: center; }
+        #about p { max-width: 800px; margin: 0 auto; font-size: 1.1rem; }
+        #skills { background: #f4f4f4; }
+        .skills-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; text-align: center; }
+        .skill-item { background: white; padding: 1rem; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        #projects { background: white; }
+        .projects-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; }
+        .project-card { background: #f9f9f9; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 8px rgba(0,0,0,0.1); transition: transform 0.3s; }
+        .project-card:hover { transform: translateY(-5px); }
+        .project-card img { width: 100%; height: 200px; object-fit: cover; }
+        .project-card h3 { padding: 1rem; font-size: 1.3rem; }
+        .project-card p { padding: 0 1rem 1rem; }
+        .project-tech { padding: 0 1rem 1rem; font-style: italic; color: #667eea; }
+        #contact { background: #f4f4f4; text-align: center; }
+        footer { background: #333; color: white; text-align: center; padding: 1rem; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>{{name}}</h1>
+        <p>{{title}}</p>
+    </header>
+    <nav>
+        <ul>
+            <li><a href="#about">About</a></li>
+            <li><a href="#skills">Skills</a></li>
+            <li><a href="#projects">Projects</a></li>
+            <li><a href="#contact">Contact</a></li>
+        </ul>
+    </nav>
+    <section id="about">
+        <h2>About Me</h2>
+        <p>{{summary}}</p>
+    </section>
+    <section id="skills">
+        <h2>Skills</h2>
+        <div class="skills-grid" id="skillsList">
+            <!-- SKILLS WILL BE INJECTED HERE -->
+        </div>
+    </section>
+    <section id="projects">
+        <h2>Projects</h2>
+        <div class="projects-grid" id="projectsList">
+            <!-- PROJECTS WILL BE INJECTED HERE -->
+        </div>
+    </section>
+    <section id="contact">
+        <h2>Contact</h2>
+        <p>Let's connect! Email: <a href="mailto:{{email}}">{{email}}</a> | Phone: {{phone}}</p>
+    </section>
+    <footer>
+        <p>&copy; 2025 {{name}}. All rights reserved.</p>
+    </footer>
+</body>
+</html>
+    `;
+
     const prompt = `
-        Act as an expert frontend developer. Based on the provided structured resume data (in JSON format), generate a complete, single-file HTML for a professional and modern personal portfolio website.
-
+        You are a templating engine. Your task is to take the provided HTML template and populate it with the user's data from the JSON object.
+        
         **CRITICAL INSTRUCTIONS:**
-        1.  **Single File Only:** The entire output must be a single HTML file. All CSS must be included via CDN.
-        2.  **Use Tailwind CSS:** You MUST use Tailwind CSS for all styling. Include it via the CDN in the <head>: <script src="https://cdn.tailwindcss.com"></script>.
-        3.  **Responsive Design:** The layout must be fully responsive and look great on mobile, tablet, and desktop screens.
-        4.  **Content Population:** Use the provided JSON data to populate all sections of the portfolio.
-        5.  **Clean & Modern Aesthetic:** The design should be clean, with good whitespace, professional fonts (like Inter from Google Fonts), and a visually appealing color scheme.
-        6.  **Required Sections:** The portfolio MUST include:
-            - A hero/header section with the person's name and professional title.
-            - An "About Me" section using the summary.
-            - A "Projects" section that displays each project in a visually appealing card format.
-            - A "Skills" section that lists the skills.
-            - A "Contact" section with email, phone, and a link to the contact address.
-        7.  **Raw HTML Output:** The final output MUST be only the raw HTML code, starting with <!DOCTYPE html> and ending with </html>. Do not include any explanations, comments, or markdown formatting like \`\`\`html.
+        1.  **Fill Simple Placeholders:** Replace all placeholders like \`{{name}}\`, \`{{title}}\`, \`{{summary}}\`, \`{{email}}\`, and \`{{phone}}\` with the corresponding values from the JSON data.
+        2.  **Generate Dynamic Sections:**
+            - For the 'SKILLS' section, find the "SKILLS" section in the JSON data. Iterate through its "items" array. For each skill, create a \`<div class="skill-item"><strong>SKILL_NAME</strong></div>\` and inject it inside the \`<div id="skillsList"></div>\`.
+            - For the 'PROJECTS' section, find the "PROJECTS" section in the JSON data. Iterate through its "items" array. For each project, create a project card using this exact HTML structure: \`<div class="project-card"><img src="https://via.placeholder.com/300x200?text=Project+Image" alt="{{heading}}"><h3>{{heading}}</h3><p>{{description}}</p><div class="project-tech">{{subheading}}</div></div>\`. Replace the placeholders with the 'heading', 'subheading', and 'description' from each project item.
+        3.  **Output:** Return only the final, complete, and valid HTML code. Do not include any explanations, markdown formatting, or comments.
 
-        **Resume Data (JSON):**
+        **HTML TEMPLATE:**
+        ---
+        ${portfolioTemplate}
+        ---
+
+        **USER DATA (JSON):**
         ---
         ${JSON.stringify(resumeData, null, 2)}
         ---
@@ -371,7 +436,6 @@ app.post('/api/generate-portfolio', async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
-
 
 // --- Serve the Frontend ---
 app.get('/', (req, res) => {

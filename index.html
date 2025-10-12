@@ -3,12 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Resume Builder</title>
+    <title>AI Resume & Portfolio Builder</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="icon" type="image/png" href="jupyter.png">
-
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -30,7 +28,6 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-        /* FIX: Added styles for a modern, document-like look */
         .output-panel {
             background-color: #f7fafc;
             border: 1px solid #e2e8f0;
@@ -44,27 +41,31 @@
         .output-panel li { margin-bottom: 0.25rem; }
         .output-panel strong { font-weight: 600; }
         .output-panel em { font-style: italic; color: #4a5568; }
-
         .input-group { margin-bottom: 1.5rem; padding: 1.5rem; border: 1px solid #e2e8f0; border-radius: 0.5rem; background-color: #ffffff; }
         .input-field { width: 100%; padding: 0.75rem; border: 1px solid #cbd5e0; border-radius: 0.375rem; transition: all 0.2s ease-in-out; }
         .input-field:focus { box-shadow: 0 0 0 2px #3b82f6; border-color: #3b82f6; outline: none; }
         .tab-btn { padding: 0.5rem 1rem; border-radius: 0.375rem; font-weight: 500; cursor: pointer; transition: background-color 0.2s; }
         .tab-btn.active { background-color: #3b82f6; color: white; }
         .tab-btn:not(.active) { background-color: #e2e8f0; color: #4a5568; }
+        #portfolio-preview {
+            width: 100%;
+            height: 100%;
+            border: none;
+            border-radius: 0.375rem;
+        }
     </style>
 </head>
 <body class="bg-gray-100 text-gray-800">
 
     <div class="container mx-auto max-w-7xl px-4 py-8">
         <header class="text-center mb-10">
-            <h1 class="text-4xl font-bold text-gray-900">AI Resume & Cover Letter Builder</h1>
-            <p class="text-lg text-gray-600 mt-2">Fill in your details and let our AI create a professional, ATS-optimized resume for you.</p>
+            <h1 class="text-4xl font-bold text-gray-900">AI Resume & Portfolio Builder</h1>
+            <p class="text-lg text-gray-600 mt-2">Fill in your details and let our AI create professional documents and a personal portfolio for you.</p>
         </header>
 
         <main class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div id="resume-form" class="h-[90vh] overflow-y-auto pr-4">
+            <div id="resume-form" class="h-[95vh] overflow-y-auto pr-4">
                 <h2 class="text-2xl font-semibold mb-4">Enter Your Details</h2>
-
                 <div class="input-group">
                     <h3 class="font-semibold text-lg mb-3">Personal Details</h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -74,82 +75,92 @@
                         <div><label class="block text-sm font-medium">LinkedIn Profile</label><input id="linkedin" type="url" class="input-field" placeholder="linkedin.com/in/neeraj-arroju-10b559367"></div>
                     </div>
                 </div>
-
                 <div class="input-group">
                      <h3 class="font-semibold text-lg mb-3">Education</h3>
                      <div><label class="block text-sm font-medium">University/College</label><input id="university" type="text" class="input-field" placeholder="State University"></div>
                      <div class="mt-4"><label class="block text-sm font-medium">Degree & Major</label><input id="degree" type="text" class="input-field" placeholder="B.S. in Computer Science"></div>
                      <div class="mt-4"><label class="block text-sm font-medium">Graduation Date</label><input id="gradDate" type="text" class="input-field" placeholder="May 2025"></div>
                 </div>
-                
                 <div class="input-group">
                     <h3 class="font-semibold text-lg mb-3">Work Experience / Internships</h3>
                     <div id="experience-container"></div>
                     <button id="add-experience-btn" class="mt-2 text-sm text-blue-600 hover:text-blue-800 font-medium">+ Add another experience</button>
                 </div>
-
                 <div class="input-group">
                     <h3 class="font-semibold text-lg mb-3">Projects</h3>
                     <div id="projects-container"></div>
                     <button id="add-project-btn" class="mt-2 text-sm text-blue-600 hover:text-blue-800 font-medium">+ Add another project</button>
                 </div>
-
                 <div class="input-group">
                      <h3 class="font-semibold text-lg mb-3">Skills</h3>
                      <label class="block text-sm font-medium">List your technical and soft skills (comma separated)</label>
                      <textarea id="skills" class="input-field" rows="4" placeholder="e.g., Python, JavaScript, React, SQL, Team Leadership, Problem Solving"></textarea>
                 </div>
-
                 <div class="input-group">
                      <h3 class="font-semibold text-lg mb-3">Target Job Description (Optional)</h3>
-                     <textarea id="job-description" class="input-field" rows="8" placeholder="Paste the job description here to tailor your resume..."></textarea>
+                     <textarea id="job-description" class="input-field" rows="8" placeholder="Paste the job description here to tailor your resume...
+e.g, TCS, Software Development"></textarea>
                 </div>
-                
             </div>
 
-            <div class="bg-white p-6 rounded-lg shadow-md h-fit relative">
-                <div id="loader" class="loader hidden absolute inset-0 bg-white bg-opacity-75"></div>
-                <div id="error-message" class="hidden bg-red-100 text-red-700 p-3 rounded-md mb-4"></div>
-
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-2xl font-semibold">Your Generated Documents</h2>
-                    <div id="output-tabs" class="flex space-x-2">
+            <div id="output-section" class="h-[95vh] overflow-y-auto pr-4 relative">
+                <h2 class="text-2xl font-semibold mb-4">Your Generated Documents</h2>
+                <div id="loader" class="loader hidden absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"></div>
+                <div class="bg-white p-6 rounded-lg shadow-md h-full flex flex-col">
+                    <div id="error-message" class="hidden bg-red-100 text-red-700 p-3 rounded-md mb-4"></div>
+                    <div id="output-tabs" class="flex space-x-2 mb-4">
                         <button id="resume-tab-btn" class="tab-btn active">Resume</button>
                         <button id="cover-letter-tab-btn" class="tab-btn">Cover Letter</button>
                         <button id="interview-prep-tab-btn" class="tab-btn" disabled>Interview Prep</button>
+                        <button id="portfolio-tab-btn" class="tab-btn" disabled>Portfolio</button>
                     </div>
-                </div>
 
-                <div id="resume-output" class="output-panel p-4 rounded-md h-[65vh] overflow-y-auto">Your new resume will appear here...</div>
-                <div id="cover-letter-output" class="output-panel hidden p-4 rounded-md h-[65vh] overflow-y-auto">Your cover letter will appear here...</div>
-                <div id="interview-prep-output" class="output-panel hidden p-4 rounded-md h-[65vh] overflow-y-auto">Your personalized interview prep will appear here...</div>
-                
-                <div id="analysis-output" class="hidden mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                    <h3 class="font-bold text-lg mb-2">Analysis & Suggestions</h3>
-                    <div class="flex items-center mb-2">
-                        <p class="font-semibold mr-2">ATS Score:</p>
-                        <p id="ats-score" class="text-xl font-bold text-blue-600">Calculating...</p>
+                    <div class="flex-grow min-h-0">
+                        <div id="resume-output" class="output-panel p-4 rounded-md h-full overflow-y-auto">
+                            Your new resume will appear here...
+                            <div id="analysis-output" class="hidden mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                                <h3 class="font-bold text-lg mb-2">Analysis & Suggestions</h3>
+                                <div class="flex items-center mb-2">
+                                    <p class="font-semibold mr-2">ATS Score:</p>
+                                    <p id="ats-score" class="text-xl font-bold text-blue-600">Calculating...</p>
+                                </div>
+                                <div>
+                                    <p class="font-semibold">Suggestions for Improvement:</p>
+                                    <div id="suggestions" class="text-sm text-gray-700 whitespace-pre-wrap">Loading...</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="cover-letter-output" class="output-panel hidden p-4 rounded-md h-full overflow-y-auto">Your cover letter will appear here...</div>
+                        <div id="interview-prep-output" class="output-panel hidden p-4 rounded-md h-full overflow-y-auto">Your personalized interview prep will appear here...</div>
+                        <div id="portfolio-output" class="output-panel hidden p-2 rounded-md h-full overflow-y-auto">
+                            <iframe id="portfolio-preview" title="Portfolio Preview">Your portfolio preview will appear here...</iframe>
+                        </div>
                     </div>
-                    <div>
-                        <p class="font-semibold">Suggestions for Improvement:</p>
-                        <div id="suggestions" class="text-sm text-gray-700 whitespace-pre-wrap">Loading...</div>
+                    
+                    <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <button id="generate-btn" class="w-full bg-gray-800 text-white font-bold py-3 px-4 rounded-md hover:bg-gray-700">Generate Resume</button>
+                        <button id="download-docx-btn" class="w-full bg-gray-600 text-white font-bold py-3 px-4 rounded-md hover:bg-gray-500 disabled:bg-gray-400" disabled>Download as DOCX</button>
+                        <button id="generate-cover-letter-btn" class="w-full bg-gray-800 text-white font-bold py-3 px-4 rounded-md hover:bg-gray-700 disabled:bg-gray-400" disabled>Generate Cover Letter</button>
+                        <button id="generate-portfolio-btn" class="w-full bg-gray-800 text-white font-bold py-3 px-4 rounded-md hover:bg-gray-700 disabled:bg-gray-400" disabled>Generate Portfolio</button>
+                        <button id="download-html-btn" class="w-full md:col-span-2 bg-black text-white font-bold py-3 px-4 rounded-md hover:bg-gray-800 disabled:bg-gray-400" disabled>Download Portfolio</button>
                     </div>
-                </div>
-
-                 <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <button id="generate-btn" class="md:col-span-1 w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-md hover:bg-blue-700">Generate Resume</button>
-                    <button id="generate-cover-letter-btn" class="w-full bg-green-600 text-white font-bold py-3 px-4 rounded-md hover:bg-green-700 disabled:bg-gray-400" disabled>Generate Cover Letter</button>
-                    <button id="download-docx-btn" class="w-full bg-gray-700 text-white font-bold py-3 px-4 rounded-md hover:bg-gray-800 disabled:bg-gray-400" disabled>Download as DOCX</button>
                 </div>
             </div>
         </main>
     </div>
 
+    <!-- ✨ NEW: Footer Section -->
+    <footer class="text-center py-6 text-gray-500 text-sm">
+        <p>&copy; 2025 | Built by <span class="font-semibold text-gray-600">Neeraj Arroju</span></p>
+        <p>Contact: <a href="mailto:arrojuneeraj@gmail.com" class="text-blue-600 hover:underline">arrojuneeraj@gmail.com</a></p>
+    </footer>
+
     <script>
         let expCounter = 0;
         let projCounter = 0;
-        let currentResumeData = null; // For DOCX
-        let currentStudentData = ""; // For other API calls
+        let currentResumeData = null; 
+        let currentStudentData = "";
+        let currentPortfolioHtml = "";
 
         // --- DOM ELEMENTS ---
         const generateBtn = document.getElementById('generate-btn');
@@ -170,6 +181,11 @@
         const experienceContainer = document.getElementById('experience-container');
         const addProjectBtn = document.getElementById('add-project-btn');
         const projectsContainer = document.getElementById('projects-container');
+        const generatePortfolioBtn = document.getElementById('generate-portfolio-btn');
+        const portfolioTabBtn = document.getElementById('portfolio-tab-btn');
+        const portfolioOutput = document.getElementById('portfolio-output');
+        const portfolioPreview = document.getElementById('portfolio-preview');
+        const downloadHtmlBtn = document.getElementById('download-html-btn');
 
         // --- DYNAMIC FORM LOGIC ---
         const addExperienceEntry = () => {
@@ -185,7 +201,6 @@
             `;
             experienceContainer.appendChild(entryDiv);
         };
-        
         const addProjectEntry = () => {
             projCounter++;
             const entryDiv = document.createElement('div');
@@ -198,17 +213,15 @@
             `;
             projectsContainer.appendChild(entryDiv);
         };
-
         addExperienceEntry();
         addProjectEntry();
-
         addExperienceBtn.addEventListener('click', addExperienceEntry);
         addProjectBtn.addEventListener('click', addProjectEntry);
         
         // --- TAB SWITCHING LOGIC ---
         const handleTabClick = (activeTab) => {
-            const tabs = [resumeTabBtn, coverLetterTabBtn, interviewPrepTabBtn];
-            const panels = [resumeOutput, coverLetterOutput, interviewPrepOutput];
+            const tabs = [resumeTabBtn, coverLetterTabBtn, interviewPrepTabBtn, portfolioTabBtn];
+            const panels = [resumeOutput, coverLetterOutput, interviewPrepOutput, portfolioOutput];
             
             tabs.forEach(tab => tab.classList.remove('active'));
             panels.forEach(panel => panel.classList.add('hidden'));
@@ -217,8 +230,8 @@
             if (activeTab === resumeTabBtn) resumeOutput.classList.remove('hidden');
             if (activeTab === coverLetterTabBtn) coverLetterOutput.classList.remove('hidden');
             if (activeTab === interviewPrepTabBtn) interviewPrepOutput.classList.remove('hidden');
+            if (activeTab === portfolioTabBtn) portfolioOutput.classList.remove('hidden');
         };
-
         resumeTabBtn.addEventListener('click', () => handleTabClick(resumeTabBtn));
         coverLetterTabBtn.addEventListener('click', () => handleTabClick(coverLetterTabBtn));
         interviewPrepTabBtn.addEventListener('click', async () => {
@@ -227,6 +240,7 @@
                  await generateInterviewPrep();
             }
         });
+        portfolioTabBtn.addEventListener('click', () => handleTabClick(portfolioTabBtn));
 
         // --- DATA COLLECTION FUNCTION ---
         const collectStudentData = () => {
@@ -289,8 +303,9 @@
             }
             loader.classList.remove('hidden');
             errorMessage.classList.add('hidden');
-            analysisOutput.classList.add('hidden');
-            [generateBtn, generateCoverLetterBtn, downloadDocxBtn, interviewPrepTabBtn].forEach(btn => btn.disabled = true);
+            const analysisPanel = document.getElementById('analysis-output');
+            analysisPanel.classList.add('hidden');
+            [generateBtn, generateCoverLetterBtn, downloadDocxBtn, interviewPrepTabBtn, generatePortfolioBtn, downloadHtmlBtn].forEach(btn => btn.disabled = true);
             generateBtn.textContent = 'Generating...';
 
             try {
@@ -302,13 +317,18 @@
                 if (!response.ok) throw new Error((await response.json()).error || 'Unknown error');
                 const result = await response.json();
                 
-                // FIX: Use .innerHTML to render the HTML from the server
-                resumeOutput.innerHTML = result.resumeText || "<p>No content returned.</p>";
-                atsScoreEl.textContent = result.atsScore || "N/A";
-                suggestionsEl.textContent = result.suggestions || "No suggestions available.";
+                const resumeContent = result.resumeText || "<p>No content returned.</p>";
+                resumeOutput.innerHTML = resumeContent + document.getElementById('analysis-output').outerHTML;
+                
+                const newAnalysisOutput = document.getElementById('analysis-output');
+                const newAtsScoreEl = document.getElementById('ats-score');
+                const newSuggestionsEl = document.getElementById('suggestions');
+
+                newAtsScoreEl.textContent = result.atsScore || "N/A";
+                newSuggestionsEl.textContent = result.suggestions || "No suggestions available.";
                 currentResumeData = result.resumeData; 
-                [generateCoverLetterBtn, downloadDocxBtn, interviewPrepTabBtn].forEach(btn => btn.disabled = false);
-                analysisOutput.classList.remove('hidden');
+                [generateCoverLetterBtn, downloadDocxBtn, interviewPrepTabBtn, generatePortfolioBtn].forEach(btn => btn.disabled = false);
+                newAnalysisOutput.classList.remove('hidden');
             } catch (error) {
                 errorMessage.textContent = `An error occurred: ${error.message}.`;
                 errorMessage.classList.remove('hidden');
@@ -350,7 +370,7 @@
         });
 
         generateCoverLetterBtn.addEventListener('click', async () => {
-            const jobDescription = document.getElementById('job-description').value.trim();
+             const jobDescription = document.getElementById('job-description').value.trim();
             if (!jobDescription) return alert("Please provide a job description for the cover letter.");
             loader.classList.remove('hidden');
             generateCoverLetterBtn.disabled = true;
@@ -358,12 +378,10 @@
                 const response = await fetch('/api/generate-cover-letter', {
                      method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    // ***** BUG FIX IS HERE *****
                     body: JSON.stringify({ studentData: currentStudentData, jobDescription, resumeData: currentResumeData })
                 });
                 if (!response.ok) throw new Error((await response.json()).error);
                 const result = await response.json();
-                // FIX: Use .innerHTML
                 coverLetterOutput.innerHTML = result.coverLetterText.replace(/\n/g, '<br>') || "<p>No content returned.</p>";
             } catch(error) {
                 errorMessage.textContent = `An error occurred: ${error.message}.`;
@@ -374,7 +392,7 @@
                 handleTabClick(coverLetterTabBtn);
             }
         });
-
+        
         const generateInterviewPrep = async () => {
             const jobDescription = document.getElementById('job-description').value.trim();
             loader.classList.remove('hidden');
@@ -387,7 +405,6 @@
                 });
                 if (!response.ok) throw new Error((await response.json()).error);
                 const result = await response.json();
-                // FIX: Use .innerHTML
                 interviewPrepOutput.innerHTML = result.interviewPrepText.replace(/\n/g, '<br>') || "<p>No content returned.</p>";
             } catch(error) {
                 errorMessage.textContent = `An error occurred: ${error.message}.`;
@@ -397,6 +414,61 @@
                 interviewPrepTabBtn.disabled = false;
             }
         };
+
+        generatePortfolioBtn.addEventListener('click', async () => {
+            if (!currentResumeData) {
+                return alert("Please generate a resume first.");
+            }
+            loader.classList.remove('hidden');
+            generatePortfolioBtn.disabled = true;
+            generatePortfolioBtn.textContent = 'Building Portfolio...';
+            downloadHtmlBtn.disabled = true;
+
+            try {
+                const response = await fetch('/api/generate-portfolio', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ resumeData: currentResumeData })
+                });
+
+                if (!response.ok) {
+                    throw new Error((await response.json()).error || 'Failed to generate portfolio');
+                }
+                const result = await response.json();
+                
+                currentPortfolioHtml = result.portfolioHtml;
+                const blob = new Blob([currentPortfolioHtml], { type: 'text/html' });
+                portfolioPreview.src = URL.createObjectURL(blob);
+                
+                handleTabClick(portfolioTabBtn);
+                portfolioTabBtn.disabled = false;
+                downloadHtmlBtn.disabled = false;
+
+            } catch (error) {
+                errorMessage.textContent = `An error occurred: ${error.message}.`;
+                errorMessage.classList.remove('hidden');
+            } finally {
+                loader.classList.add('hidden');
+                generatePortfolioBtn.disabled = false;
+                generatePortfolioBtn.textContent = 'Generate Portfolio';
+            }
+        });
+
+        downloadHtmlBtn.addEventListener('click', () => {
+            if (!currentPortfolioHtml) {
+                return alert("Please generate a portfolio first.");
+            }
+            const blob = new Blob([currentPortfolioHtml], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'portfolio.html';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        });
     </script>
 </body>
 </html>
+

@@ -22,17 +22,25 @@ const callGeminiApi = async (prompt, isJson = false) => {
     if (!GEMINI_API_KEY) {
         throw new Error('API key not found. Please set it in the .env file.');
     }
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${GEMINI_API_KEY}`;
+    
+    // FIX: Use the specific preview model supported in this environment
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${GEMINI_API_KEY}`;
     
     try {
-        const payload = { contents: [{ parts: [{ text: prompt }] }] };
+        const payload = { 
+            contents: [{ parts: [{ text: prompt }] }] 
+        };
+
         if (isJson) {
             payload.generationConfig = { responseMimeType: "application/json" };
         }
+
         const response = await axios.post(apiUrl, payload, {
             headers: { 'Content-Type': 'application/json' }
         });
+
         const generatedText = response.data.candidates?.[0]?.content?.parts?.[0]?.text;
+        
         if (generatedText) {
             return generatedText;
         } else {
@@ -40,8 +48,15 @@ const callGeminiApi = async (prompt, isJson = false) => {
             throw new Error("The AI model returned an empty or invalid response.");
         }
     } catch (error) {
-        console.error('Error calling Gemini API:', error.response ? JSON.stringify(error.response.data, null, 2) : error.message);
-        throw new Error('Failed to get a response from the AI model.');
+        // Enhanced error logging for debugging
+        if (error.response) {
+            console.error('Gemini API Error Status:', error.response.status);
+            console.error('Gemini API Error Data:', JSON.stringify(error.response.data, null, 2));
+            throw new Error(`AI Model Error: ${error.response.status} - ${JSON.stringify(error.response.data.error?.message || 'Unknown error')}`);
+        } else {
+            console.error('Error calling Gemini API:', error.message);
+            throw new Error(`Connection Error: ${error.message}`);
+        }
     }
 };
 
@@ -118,7 +133,7 @@ app.post('/api/generate', async (req, res) => {
     `;
     try {
         let jsonResponse = await callGeminiApi(prompt, true);
-        // FIX: Clean the response to remove markdown formatting that can cause parsing errors.
+        // Clean the response to remove markdown formatting that can cause parsing errors.
         jsonResponse = jsonResponse.replace(/```json/g, '').replace(/```/g, '').trim();
         const resumeData = JSON.parse(jsonResponse);
 
@@ -148,7 +163,8 @@ app.post('/api/generate', async (req, res) => {
 
     } catch (error) {
         console.error("Error processing generation request:", error);
-        res.status(500).json({ error: "Failed to generate structured resume data. The AI response might be malformed." });
+        // Return the actual error message from callGeminiApi instead of a generic one
+        res.status(500).json({ error: error.message || "Failed to generate structured resume data." });
     }
 });
 
@@ -470,4 +486,3 @@ app.get('/', (req, res) => {
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
 });
-

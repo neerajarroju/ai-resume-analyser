@@ -23,8 +23,8 @@ const callGeminiApi = async (prompt, isJson = false) => {
         throw new Error('API key not found. Please set it in the .env file.');
     }
     
-    // FIX: Use the specific preview model supported in this environment
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${GEMINI_API_KEY}`;
+    // FIX: Updated to the stable gemini-2.5-flash model
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
     
     try {
         const payload = { 
